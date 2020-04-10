@@ -13,15 +13,13 @@ as well as other states such as dW depending on the type of optimizer
 
 
 class Optimizer(ABC):
-  W: np.ndarray  # reference to the weights in the model
-  dW: np.ndarray
 
   @abstractmethod
   def __init__(self, *args, **kwargs):
     """set parameters"""
 
   @abstractmethod
-  def initialize(self, i, o):
+  def initialize(self, L):
     """set up necessary parameters"""
 
   @abstractmethod
@@ -31,31 +29,17 @@ class Optimizer(ABC):
   def __call__(self, cost):
     self._update(cost)
 
-  def _set_W(self, i, o):
-    self.W = []
-    self.dW = []
-    queue = Queue()
-    for l in o:
-      queue.put(l)
-    while queue.not_empty:
-      current_layer = queue.get()
-      self.w.append(current_layer.W)
-      self.dw.append(current_layer.dW)
-      if current_layer != (None,):
-        queue.put(current_layer.previous)
-
 
 class RandomOptimizer(Optimizer):
   def __init__(self, learning_rate):
     self.learning_rate = learning_rate
 
-  def initialize(self, i, o):
-    self._set_W(i, o)
+  def initialize(self, L):
+    self.W = (l.W for l in L)
 
   def update(self, in_batch, cost):
-    for w, dw in zip(self.W, self.dW):
-      dw = np.random.rand(*dw.shape)
-      w += self.learning_rate * dw
+    for w in self.W:
+      self.w += self.learning_rate * np.random.rand(*w.shape)
 
 
 class SGD(Optimizer):

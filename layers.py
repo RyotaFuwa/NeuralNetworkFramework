@@ -16,6 +16,7 @@ return (batch_size, *layer.shape)
 class Layer(ABC):
   CONST: Set[str] = {'shape', 'w'}  # accessible but not be modified
   ONLY_IN_TRAINING: bool
+  LEARNABLE: bool
 
   shape: Tuple[int]  # shape of the layer (i.e the shape of output)
   w: np.ndarray  # learnable weights
@@ -35,8 +36,12 @@ class Layer(ABC):
     return not self.__eq__(other)
 
   @abstractmethod
-  def calculate(self, x: np.ndarray):
+  def f(self, x: np.ndarray):
     """calculate output for x"""
+
+  @abstractmethod
+  def df(self, y: np.ndarray):
+    """calculate dy/dx and dy/dw if it has weights"""
 
 
 # Input Layer. Define the input of the model
@@ -53,8 +58,11 @@ class Input(Layer):
   def __call__(self, x):
     pass
 
-  def calculate(self, x: np.ndarray):
+  def f(self, x: np.ndarray):
     return x
+
+  def df(self, y: np.ndarray):
+    pass
 
 
 class SequenceLayer(Layer, ABC):
@@ -65,22 +73,18 @@ class SequenceLayer(Layer, ABC):
     else:
       i.next = (*i.next, self)
 
-  def create_str(self, shape='()', **kwargs):
+  def __str__(self, shape='()', **kwargs):
     class_txt = self.__class__.__name__.ljust(15)
     w_txt = ":: {}".format((None, *shape))  # None changes depending on the batch_size
     param_txt = "{" + ', '.join(["{}: {}".format(k, v) for k, v in kwargs]) + "}"
     return class_txt + w_txt + param_txt
 
 
-class AggregateLayer(Layer, ABC):
-  def __call__(self, *i: Layer):
-    self.previous = i
-
-
 # Forward Layer. Take 1-dim input and return 1-dim output
 class Forward(SequenceLayer):
   SequenceLayer.CONST.add('activation')
   ONLY_IN_TRAINING = False
+  LEARNABLE = True
 
   _A: np.ndarray
   _b: np.ndarray
@@ -99,16 +103,17 @@ class Forward(SequenceLayer):
     SequenceLayer.__call__(self, i)
     return self
 
-  def __str__(self):
-    return self.create_str(w=self.shape, activation=self.activation)
+  def f(self, X: np.ndarray):
+    return self.activation.f(X.dot(self._A) + self._b)
 
-  def calculate(self, X: np.ndarray):
-    return X.dot(self._A) + self._b
+  def df(self, y: np.ndarray):
+    pass  #TODO
 
 
 # Dropout Layer.
 class Dropout(SequenceLayer):
   ONLY_IN_TRAINING = True
+  LEARNABLE = False
   _filter: np.ndarray
 
   def __init__(self, prob):
@@ -121,10 +126,14 @@ class Dropout(SequenceLayer):
     SequenceLayer.__call__(self, i)
     return self
 
-  def __str__(self):
-    return self.create_str()
-
-  def calculate(self, x: np.ndarray):
+  def f(self, x: np.ndarray):
     self._filter = np.where(np.random.rand(*self._fileter.shape) > self.prob, 1.0, 0.0)
     return x * self._filter
 
+  def df(self, y: np.ndarray):
+    pass  #TODO
+
+
+class AggregateLayer(Layer, ABC):
+  def __call__(self, *i: Layer):
+    self.previous = i

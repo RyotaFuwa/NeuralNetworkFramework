@@ -31,29 +31,41 @@ class Model(ABC):
     else:
       self._O = outs
 
-  @abstractmethod
+    self._L = []
+    queue = Queue()
+    for l in outs:
+      queue.put(l)
+    while queue.not_empty:
+      current_layer = queue.get()
+      self._L.append(current_layer)
+      if current_layer != (None,):
+        queue.put(current_layer.previous)
+
   def learn(self, x: np.ndarray, y: np.ndarray, trainer: Trainer):
-    """learning process"""
+    trainer.optimizer.initialize(self._L)
+
+    num_of_samples = x.shape[0]
+    num_of_cycles = num_of_samples * trainer.epochs // trainer.batch_size
+    if num_of_cycles < 1:
+      num_of_cycles = 1
+
+    for _ in range(num_of_cycles):
+      _in = self._get_Batch(x, batch_size=trainer.batch_size, shuffle=trainer.shuffle)
+      _out = self.f(_in)
+      cost = Trainer.loss(_out, y)
+      trainer.optimizer(_in, cost)
 
   @abstractmethod
   def predict(self, x: np.ndarray):
     """calculate output"""
 
-  def summary(self):
-    title_txt = self.__class__.__name__ + "::\n"
-    header_txt = "--->\n"
-    layer_txt = "\n".join(["{} Layer({})| ".format(i, "L" if layer.LEARNABLE else "NL").ljust(11) + str(layer)
-                           for i, layer in enumerate(self._layers)])
-    footer_txt = "<---\n"
-    return title_txt + header_txt + layer_txt + footer_txt
-
   def __call__(self, x: np.ndarray):
     """alias for predict"""
     return self.predict(x)
 
-  def __repr__(self):
-    """alias for summary"""
-    return self.summary()
+  @abstractmethod
+  def f(self, x: np.ndarray, predict=False):
+    """calculate"""
 
   @staticmethod
   def _get_Batch(x: np.ndarray, batch_size: int, shuffle: bool = False) -> np.ndarray:
@@ -65,28 +77,12 @@ class Model(ABC):
 
 
 class ANN(Model):
-
-  def learn(self, x: np.ndarray, y: np.ndarray, trainer: Trainer):
-    trainer.optimizer.initialize(self._I, self._O)
-
-    num_of_samples = x.shape[0]
-    num_of_cycles = num_of_samples * trainer.epochs // trainer.batch_size
-    if num_of_cycles < 1:
-      num_of_cycles = 1
-    for _ in range(num_of_cycles):
-      _in = self._get_Batch(x, batch_size=trainer.batch_size, shuffle=trainer.shuffle)
-      _out = self._calculate(_in)
-      cost = Trainer.loss(_out, y)
-
-      # TODO
-      self.trainer.optimizer(_in, cost)
-
   def predict(self, x: np.ndarray):
-    self._calculate(x, predict=True)
+    self.f(x, predict=True)
 
-  def _calculate(self, x: np.ndarray, predict=False):
-    for layer in self._layers: #TODO
-      if predict and layer.ONLY_IN_TRAINING:
+  def f(self, x: np.ndarray, predict=False):
+    for l in self._L:
+      if predict and l.ONLY_IN_TRAINING:
         continue
-      x = layer.calculate(x)
+      x = l.f(x)
     return x
