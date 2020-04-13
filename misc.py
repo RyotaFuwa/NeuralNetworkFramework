@@ -1,42 +1,38 @@
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Union, Tuple, List
 import numpy as np
+from _layers import Layer
 
 # typing definition
-TYPE_INPUT = Union['Input', Tuple['Input']]
-TYPE_LAYER = Union['Layer', Tuple['Layer']]
 
 
 class W(object):
-  w: List[np.ndarray] = []
+  params: Tuple[np.ndarray]
 
-  def __init__(self, other):
-    self.w = deepcopy(other.w)
+  def __init__(self, w, deep_copy=False):
+    if deep_copy:
+      self.params = deepcopy(w)
+    else:
+      self.params = w
 
   def __iadd__(self, other):
-    for i, j in zip(self.w, other.w):
+    for i, j in zip(self.params, other.params):
       i += j
 
   def __imul__(self, other):
-    for i, j in zip(self.w, other.w):
+    for i, j in zip(self.params, other.params):
       i *= j
 
-  def __isub(self, other):
-    for i, j in zip(self.w, other.w):
+  def __isub__(self, other):
+    for i, j in zip(self.params, other.params):
       i -= j
 
-  def __idiv(self, other):
-    for i, j in zip(self.w, other.w):
+  def __idiv__(self, other):
+    for i, j in zip(self.params, other.params):
       i /= j
 
-  def append(self, w: np.ndarary):
-    self.w_list.append(w)
+  def append(self, w_in: np.ndarray):
+    self.w.append(w_in)
 
-
-def get_I(x: np.ndarray, batch_size: int, shuffle: bool = False) -> np.ndarray:
-  if shuffle:
-    index = np.random.randint(0, x.shape[0], size=(batch_size,))
-  else:
-    index = np.arange(batch_size)
-  return x[index, :]
 
