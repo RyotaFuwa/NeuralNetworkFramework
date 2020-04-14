@@ -32,7 +32,7 @@ class Forward(SequenceLayer):
   def df(self, dy: np.ndarray):
     dy_activation = self.activation.df(dy)
     db = dy_activation
-    da = self._prev[0].w.T.dot(dy_activation)
+    da = self._x[0].T.dot(dy_activation)
     self._dw = np.array([da, db])  # dy/dw
-    return da.T.dot(dy_activation)  # dy/dx
+    return dy_activation.dot(da.T)  # dy/dx
 

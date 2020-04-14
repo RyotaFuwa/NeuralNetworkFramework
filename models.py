@@ -24,6 +24,7 @@ class Model(ABC):
   _O: TYPE_LAYER
   _layers: Tuple[Layer]  # sequence of layers
 
+  trainer: Trainer
   cycle: int
 
   def __init__(self, ins: TYPE_INPUT, outs: TYPE_LAYER):
@@ -52,6 +53,7 @@ class Model(ABC):
     self._layers = tuple(rev)
 
   def train(self, x: np.ndarray, y: np.ndarray, trainer: Trainer):
+    self.trainer = trainer
     trainer.optimizer.initialize(self._layers)
 
     num_of_samples = x.shape[0]
@@ -61,11 +63,16 @@ class Model(ABC):
 
     for i in range(num_of_cycles):
       self.cycle = i
-      _in, _label = self.get_Batch(x, y, batch_size=trainer.batch_size, shuffle=trainer.shuffle)
-      _out = self.f(_in)
-      loss_value = trainer.loss.f(_out, _label)
-      self.df(loss_value)
-      trainer.optimizer.update(self._layers)
+      epoch = int(i * trainer.batch_size / num_of_samples)
+      batch_in, label = self.get_Batch(x, y, batch_size=trainer.batch_size, shuffle=trainer.shuffle)
+      out = self.f(batch_in)
+      loss_value = trainer.loss.f(out, label)
+      dy = trainer.loss.df()  # dy: du/d(out) dx.shape == label.shape
+      self.df(dy)
+      trainer.optimizer.update()
+      if trainer.info:
+        print("epoch: {}:: Loss: {:<10.3f}".format(
+          epoch, loss_value))
 
   def __call__(self, x: np.ndarray):
     """alias for predict"""
@@ -100,11 +107,8 @@ class FNN(Model):
       x = l.f(x)
     return x
 
-  def df(self, loss_value):
+  def df(self, dy):
     rev_layers = self._layers[::-1]
-    out = rev_layers[0]
-    dy = out.df(loss_value)
-
     for l in rev_layers:
       dy = l.df(dy)
 

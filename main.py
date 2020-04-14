@@ -7,7 +7,7 @@ from layers import Input, Dropout, Forward
 from models import FNN
 from Trainer import Trainer
 from losses import CrossEntropy
-from optimizers import SGD
+from optimizers import SGD, Adam
 
 
 def load_arff(path):
@@ -61,7 +61,7 @@ def main():
   model = FNN(i, x)
 
   # training process
-  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(0.01), batch_size=200, epochs=200)
+  trainer = Trainer(loss=CrossEntropy(), optimizer=Adam(0.9, 0.95, 0.97), batch_size=200, epochs=200)
   model.train(train_x, train_y, trainer)
   model.predict(test_x)
 

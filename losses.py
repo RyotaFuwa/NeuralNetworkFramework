@@ -6,9 +6,13 @@ from Error import ShapeIncompatible
 class Loss(ABC):
   x: np.ndarray  # output from network
   y: np.ndarray  # label
-  batch_size: int
+  loss: np.float32
   @abstractmethod
   def f(self, x: np.ndarray, y: np.ndarray):
+    if x.shape != y.shape:
+      raise ShapeIncompatible("Size Different For (x: {}, y: {})".format(x.shape, y.shape))
+    self.x = x
+    self.y = y
     """
 
     :param x:
@@ -26,26 +30,27 @@ class Loss(ABC):
 
 class MSE(Loss):
   def f(self, x: np.ndarray, y: np.ndarray):
-    self.x = x
-    self.y = y
-    self.batch_size = x.shape[0]
+    super().f(x, y)
 
     if x.shape != y.shape:
       raise ShapeIncompatible("x and y's sizes are different")
-    return np.mean(np.square(x - y))
+    self.loss = np.mean(np.square(x - y))
+    return self.loss
 
   def df(self):
-    return 2.0/sum(self.shape[1:]) * (self.x - self.y)
+    batch_size = self.y.shape[0]
+    data_shape = self.y.shape[1:]
+    return 2.0/sum(data_shape) * (self.x - self.y) / batch_size
 
 
 class CrossEntropy(Loss):
   def f(self, x: np.ndarray, y: np.ndarray):
-    if x.shape != y.shape:
-      raise ShapeIncompatible("Size Different For (x: {}, y: {})".format(x.shape, y.shape))
-    return np.mean(np.sum(y * np.log(x), axis=1))
+    super().f(x, y)
+    return np.mean(-np.sum(y * np.log(x), axis=1))
 
   def df(self):
-    return - self.y / self.x
+    batch_size = self.y.shape[0]
+    return - self.y / self.x / batch_size
 
 
 

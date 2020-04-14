@@ -49,19 +49,21 @@ class Tanh(Activation):
 class Softmax(Activation):  # TODO
   def f(self, x: np.ndarray) -> np.ndarray:
     self.x = x
-    max_v = np.max(x)
-    self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v))
+    max_v = np.max(x, axis=-1).reshape((*x.shape[:-1], 1))
+    self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v), axis=-1).reshape((*x.shape[:-1], 1))
     return self.y
 
   def df(self, dy: np.ndarray) -> np.ndarray:
     D = np.zeros((self.y.shape[0], self.y.shape[1], self.y.shape[1]))
-    for i in range(self.y.shape[0]):
+    out = np.zeros_like(dy)
+    for i in range(self.y.shape[0]):  # iterate over each sample in min-batch
       D[i] = -self.y[i].dot(self.y[i])
       D[i] -= np.diag(D[i])
-      for j in range(D.shape[0]):
+      for j in range(self.y.shape[-1]):  # set diagonal element to yi(1 - yi)
         yi = self.y[i, j]
         D[i, j, j] = yi * (1 - yi)
-      return dy[i].dot(D[i])
+      out[i] = D[i].dot(dy[i])
+    return out
 
 
 class Linear(Activation):

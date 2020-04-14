@@ -10,6 +10,7 @@ class Trainer(object):
   epochs: int = 1
   shuffle: bool = True
   validation_split: float = 0.0
+  info = True
 
   def __init__(self, loss: Callable, optimizer: Optimizer, **kwargs):
     self._loss = loss
