@@ -2,11 +2,12 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.io import arff
-from activations import ReLU, Softmax
+import matplotlib.pyplot as plt
+from activations import ReLU, Softmax, Linear
 from layers import Input, Dropout, Forward
 from models import FNN
 from Trainer import Trainer
-from losses import CrossEntropy
+from losses import CrossEntropy, SoftmaxWithCrossEntropy
 from optimizers import SGD, Adam
 
 
@@ -27,11 +28,19 @@ def to_one_hot(x):
     shape = x.shape[:-1]
   else:
     shape = (x.shape[0],)
-  x = x.ravel()
+  x = x.flatten()
   num_classes = int(np.max(x) + 1)
   one_hot = np.zeros((x.shape[0], num_classes))
   one_hot[np.arange(x.shape[0]), x] = 1
   return one_hot.reshape(shape + (num_classes,))
+
+
+def simple_plot(x, y):
+  Color = {0: 'b', 1: 'r'}
+  y = np.argmax(y, axis=1)
+  plt.scatter(x[:, 0], x[:, 1], c=y)
+  plt.plot()
+  plt.show()
 
 
 def main():
@@ -48,21 +57,31 @@ def main():
     return X, Y
 
   train_x, train_y = separate_label(train_data)
-  test_x, test_y = separate_label(test_data)
   train_y = to_one_hot(train_y)
+  test_x, test_y = separate_label(test_data)
   test_y = to_one_hot(test_y)
+
+  # simple example no. two
+  train_x = np.random.randn(1000, 2)
+  train_y = to_one_hot(np.where(train_x[:, 0] < train_x[:, 1], 1, 0))
+
+  # simple_plot(train_x, train_y)
 
   # build simple FNN
   i = Input(2)
   x = Forward(10, ReLU)(i)
-  x = Dropout(0.2)(x)
-  x = Forward(10, ReLU)(x)
-  x = Forward(2, Softmax)(x)
-  model = FNN(i, x)
+  x = Forward(2)(x)
+
+  # define trainer
+  trainer = Trainer(loss=SoftmaxWithCrossEntropy(), optimizer=Adam(0.5, 0.95, 0.97), batch_size=200, epochs=2000)
+
+  # create model
+  model = FNN(i, x, trainer)
 
   # training process
-  trainer = Trainer(loss=CrossEntropy(), optimizer=Adam(0.9, 0.95, 0.97), batch_size=200, epochs=200)
-  model.train(train_x, train_y, trainer)
+  model.train(train_x, train_y)
+
+  # predict
   model.predict(test_x)
 
 

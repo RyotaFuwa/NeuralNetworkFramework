@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Union
 import numpy as np
 from Error import ShapeIncompatible
+from misc import random_like
 
 TYPE_SHAPE = Union[int, Tuple[int]]
 
@@ -18,10 +19,9 @@ class Layer(ABC, object):
   ONLY_IN_TRAINING: bool  # if True, the layer has to return an output with the same shape of the input
   LEARNABLE: bool  # if True, it has weights in side to be learned
 
-  _shape: Tuple[int]  # shape of the layer (i.e the shape of output)
+  _shape: Tuple[int]  # shape of the layer (i.e the shape of output of its layer for one sample not for mini-batch data)
   _w: np.ndarray  # learnable weights
   _dw: np.ndarray  # dL/dw (L: loss function) It must have the same shape of _w
-  _x: np.ndarray  # input from last layers
   _prev: Tuple['Layer']
   _next: Tuple['Layer']
 
@@ -79,40 +79,19 @@ class Layer(ABC, object):
     """calculate dy/dx and return it. Also, store dy/dw as self.dw if the layer is learnable"""
 
 
-# Input Layer. Define the input of the model
-class Input(Layer):
-  ONLY_IN_TRAINING = True
-  LEARNABLE = False
-
-  def __init__(self, shape: TYPE_SHAPE):
-    self._prev = ()
-    if type(shape) == int:
-      self._shape = (shape,)
-    else:
-      self._shape = shape
-    self._w = np.array([])
-    self._dw = np.array([])
-
-  def __call__(self, i):
-    self._next = (i,)
-
-  def f(self, x: np.ndarray):
-    return x
-
-  def df(self, dy: np.ndarray):
-    pass
-
-
 class SequenceLayer(Layer, ABC):
   ONLY_IN_TRAINING = False
   LEARNABLE = True
 
   def __init__(self):
-    self._next = ()
+    self._prev = None
+    self._next = None
+    self._w = None
+    self._dw = None
 
   def __call__(self, i: Layer):
-    self._prev = (i,)
-    i._next = (self,)
+    self._prev = i
+    i._next = self
     return self
 
 
@@ -125,17 +104,40 @@ class Mat(SequenceLayer):
     if len(i._shape) != 1:  # check if the input shape is compatible
       raise ShapeIncompatible("Forward Layer accepts only 1-dim data as input")
     self._w = np.random.randn(*i._shape, *self._shape) * 0.001  # initialization of weights
-    self._dw = np.zeros_like(self._w)
+    self._dw = random_like(self._w)
     SequenceLayer.__call__(self, i)
     return self
 
   def f(self, x: np.ndarray):
-    self._x = np.array([x])
+    self._x = x
     return x.dot(self._w)
 
   def df(self, dy: np.ndarray):
-    self._dw = self._prev[0]._w.T.dot(dy)  # dy/dw
+    self._dw = self._x.T.dot(dy)  # dy/dw
     return self._w.T.dot(dy)  # dy/dx
+
+
+# Input Layer. Define the input of the model
+class Input(SequenceLayer):
+  ONLY_IN_TRAINING = True
+  LEARNABLE = False
+
+  def __init__(self, shape: TYPE_SHAPE):
+    self._prev = None
+    if type(shape) == int:
+      self._shape = (shape,)
+    else:
+      self._shape = shape
+    super().__init__()
+
+  def __call__(self, i):
+    self._next = (i,)
+
+  def f(self, x: np.ndarray):
+    return x
+
+  def df(self, dy: np.ndarray):
+    pass
 
 
 # Dropout Layer.
@@ -146,8 +148,6 @@ class Dropout(SequenceLayer):
 
   def __init__(self, prob):
     self.prob = prob
-    self._w = np.array([])
-    self._dw = np.array([])
     super().__init__()
 
   def __call__(self, i: Layer):
@@ -157,7 +157,6 @@ class Dropout(SequenceLayer):
     return self
 
   def f(self, x: np.ndarray):
-    self._x = x
     self._filter = np.where(np.random.rand(*self._filter.shape) > self.prob, 1.0, 0.0)
     return x * self._filter
 

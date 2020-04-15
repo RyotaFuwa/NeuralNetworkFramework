@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple
 import numpy as np
 from _layers import Layer
+from misc import random_like
 from queue import Queue
 from misc import W
 
@@ -29,25 +30,10 @@ class Optimizer(ABC):
     self._layers = layers
 
   def W(self):
-    return np.array([l.w for l in self._layers])
+    return np.array([l.w for l in self._layers if l.LEARNABLE])
 
   def dW(self):
-    return np.array([l.dw for l in self._layers])
-
-  @staticmethod
-  def random_like(w: np.ndarray, mue=0.0, sigma=1.0):
-    def helper(w: np.ndarray, place: list):
-      if w.dtype == 'O':
-        new_place = []
-        for obj in w:
-          helper(obj, new_place)
-        place.append(np.array(new_place))
-      else:
-        value = (np.random.randn(*w.shape) - mue) * sigma
-        place.append(value)
-    out = []
-    helper(w, out)
-    return np.array(out[0])
+    return np.array([l.dw for l in self._layers if l.LEARNABLE])
 
 
 class RandomOptimizer(Optimizer):
@@ -61,7 +47,7 @@ class RandomOptimizer(Optimizer):
     self.w = self.W()
 
   def update(self):
-      self.w += self.learning_rate * Optimizer.random_like(self.w)
+      self.w += self.learning_rate * random_like(self.w)
 
 
 class SGD(Optimizer):
@@ -98,8 +84,8 @@ class Adam(Optimizer):  # TODO
     super().initialize(layers)
     self.w = self.W()
     self.dw = self.dW()
-    self.m = Optimizer.random_like(self.w, mue=0, sigma=0.001)
-    self.v = Optimizer.random_like(self.w, mue=0, sigma=0.001)
+    self.m = random_like(self.w, mue=0, sigma=0.001)
+    self.v = random_like(self.w, mue=0, sigma=0.001)
 
   def update(self):
     self.time += 1
@@ -109,6 +95,4 @@ class Adam(Optimizer):  # TODO
 
     m_hat = self.m / (1.0 - self.beta1 ** self.time)
     v_hat = self.v / (1.0 - self.beta2 ** self.time)
-    self.w -= self.learning_rate * m_hat / (v_hat + EPSILON)
-
-
+    self.w -= self.learning_rate * m_hat / (v_hat ** 0.5 + EPSILON)
