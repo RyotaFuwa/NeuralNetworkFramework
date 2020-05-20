@@ -56,7 +56,7 @@ class CrossEntropy(Loss):
 
 class SoftmaxWithCrossEntropy(Loss):
   def __init__(self):
-    self.softmax = Softmax(None)
+    self.softmax = Softmax()
     self.cross_entropy = CrossEntropy()
 
   def f(self, x: np.ndarray, y: np.ndarray):

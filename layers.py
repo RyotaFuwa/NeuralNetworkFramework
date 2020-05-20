@@ -13,8 +13,7 @@ class Forward(SequenceLayer):
   def __init__(self, w_size: int, activation: Activation = None):
     super().__init__()
     self._shape = (w_size,)
-    if activation is not None:
-      self._next = activation(self)
+    self._next = activation(self) if activation is not None else None
 
   def __call__(self, i: Layer):
     if len(i.shape) != 1:  # check if the input shape is compatible
@@ -26,10 +25,7 @@ class Forward(SequenceLayer):
 
     self._prev = i
     i._next = self
-    if self._next is not None:
-      return self._next
-    else:
-      return self
+    return self._next if self._next is not None else self
 
   def f(self, x: np.ndarray):
     self._x = x

@@ -3,11 +3,13 @@ import numpy as np
 import pandas as pd
 from scipy.io import arff
 import matplotlib.pyplot as plt
+
+from misc import normalize, to_one_hot, split_data
 from activations import ReLU, Softmax, Linear
 from layers import Input, Dropout, Forward
 from models import FNN
 from Trainer import Trainer
-from losses import CrossEntropy, SoftmaxWithCrossEntropy
+from losses import CrossEntropy, SoftmaxWithCrossEntropy, MSE
 from optimizers import SGD, Adam
 
 
@@ -15,24 +17,6 @@ def load_arff(path):
   data = arff.loadarff(path)
   data = pd.DataFrame(data[0]).to_numpy()
   return data
-
-
-def normalize(x: np.ndarray):
-  mean = x.mean()
-  scale = np.max(np.abs(x - mean))
-  return (x - mean) / scale
-
-
-def to_one_hot(x):
-  if x.shape[-1] == 1 and len(x.shape) > 1:
-    shape = x.shape[:-1]
-  else:
-    shape = (x.shape[0],)
-  x = x.flatten()
-  num_classes = int(np.max(x) + 1)
-  one_hot = np.zeros((x.shape[0], num_classes))
-  one_hot[np.arange(x.shape[0]), x] = 1
-  return one_hot.reshape(shape + (num_classes,))
 
 
 def simple_plot(x, y):
@@ -64,16 +48,19 @@ def main():
   # simple example no. two
   train_x = np.random.randn(1000, 2)
   train_y = to_one_hot(np.where(train_x[:, 0] < train_x[:, 1], 1, 0))
+  simple_plot(train_x, train_y)
+  train_x, test_x = split_data(train_x)
+  train_y, test_y = split_data(train_y)
 
-  # simple_plot(train_x, train_y)
+  simple_plot(test_x, test_y)
 
   # build simple FNN
   i = Input(2)
-  x = Forward(10, ReLU)(i)
+  x = Forward(10)(i)
   x = Forward(2)(x)
 
   # define trainer
-  trainer = Trainer(loss=SoftmaxWithCrossEntropy(), optimizer=Adam(0.5, 0.95, 0.97), batch_size=200, epochs=2000)
+  trainer = Trainer(loss=MSE(), optimizer=Adam(0.5, 0.95, 0.97), batch_size=200, epochs=2000)
 
   # create model
   model = FNN(i, x, trainer)
@@ -82,7 +69,9 @@ def main():
   model.train(train_x, train_y)
 
   # predict
-  model.predict(test_x)
+  y_hat = model.predict(test_x)
+  print(y_hat)
+  simple_plot(test_x, y_hat)
 
 
 if __name__ == '__main__':
