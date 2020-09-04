@@ -2,8 +2,7 @@ import copy
 from abc import ABC, abstractmethod
 from typing import Tuple, Union
 import numpy as np
-from Error import ShapeIncompatible
-from misc import random_like
+from optimizers import Updater
 
 TYPE_SHAPE = Union[int, Tuple[int]]
 
@@ -19,6 +18,8 @@ class Layer(ABC, object):
   ONLY_IN_TRAINING: bool  # if True, the layer has to return an output with the same shape of the input
   LEARNABLE: bool  # if True, it has weights in side to be learned
 
+  updater: Updater
+
   _shape: Tuple[int]  # shape of the layer (i.e the shape of output of its layer for one sample not for mini-batch data)
   _w: np.ndarray  # learnable weights
   _dw: np.ndarray  # dL/dw (L: loss function) It must have the same shape of _w
@@ -28,6 +29,7 @@ class Layer(ABC, object):
   @property
   def shape(self):
     pass
+
   @shape.getter
   def shape(self):
     return self._shape
@@ -35,6 +37,7 @@ class Layer(ABC, object):
   @property
   def w(self):
     pass
+
   @w.getter
   def w(self):
     return self._w
@@ -42,6 +45,7 @@ class Layer(ABC, object):
   @property
   def dw(self):
     pass
+
   @dw.getter
   def dw(self):
     return self._dw
@@ -49,6 +53,7 @@ class Layer(ABC, object):
   @property
   def prev(self):
     pass
+
   @prev.getter
   def prev(self):
     return self._prev
@@ -56,15 +61,10 @@ class Layer(ABC, object):
   @property
   def next(self):
     pass
+
   @next.getter
   def next(self):
     return self._next
-
-  def __str__(self, **kwargs):
-    class_txt = self.__class__.__name__.ljust(5)
-    w_txt = ":: {}".format((None, *self.shape))  # None changes depending on the batch_size
-    param_txt = "{" + ', '.join(["{}: {}".format(k, v) for k, v in kwargs]) + "}"
-    return class_txt + w_txt + param_txt
 
   @abstractmethod
   def __call__(self, i):
@@ -76,7 +76,13 @@ class Layer(ABC, object):
 
   @abstractmethod
   def df(self, y: np.ndarray):
-    """calculate dy/dx and return it. Also, store dy/dw as self.dw if the layer is learnable"""
+    """return dy/dx, store dy/dw to dw, and update w based on the derivative. if the layer is learnable"""
+
+  def __str__(self, **kwargs):
+    class_txt = self.__class__.__name__.ljust(5)
+    w_txt = ":: {}".format((None, *self.shape))  # None changes depending on the batch_size
+    param_txt = "{" + ', '.join(["{}: {}".format(k, v) for k, v in kwargs]) + "}"
+    return class_txt + w_txt + param_txt
 
 
 class SequenceLayer(Layer, ABC):
@@ -95,76 +101,3 @@ class SequenceLayer(Layer, ABC):
     return self
 
 
-class Mat(SequenceLayer):
-  def __init__(self, w_size: int):
-    self._shape = (w_size,)
-    super().__init__()
-
-  def __call__(self, i: Layer):
-    if len(i._shape) != 1:  # check if the input shape is compatible
-      raise ShapeIncompatible("Forward Layer accepts only 1-dim data as input")
-    self._w = np.random.randn(*i._shape, *self._shape) * 0.001  # initialization of weights
-    self._dw = random_like(self._w)
-    SequenceLayer.__call__(self, i)
-    return self
-
-  def f(self, x: np.ndarray):
-    self._x = x
-    return x.dot(self._w)
-
-  def df(self, dy: np.ndarray):
-    self._dw = self._x.T.dot(dy)  # dy/dw
-    return self._w.T.dot(dy)  # dy/dx
-
-
-# Input Layer. Define the input of the model
-class Input(SequenceLayer):
-  ONLY_IN_TRAINING = True
-  LEARNABLE = False
-
-  def __init__(self, shape: TYPE_SHAPE):
-    self._prev = None
-    if type(shape) == int:
-      self._shape = (shape,)
-    else:
-      self._shape = shape
-    super().__init__()
-
-  def __call__(self, i):
-    self._next = (i,)
-
-  def f(self, x: np.ndarray):
-    return x
-
-  def df(self, dy: np.ndarray):
-    pass
-
-
-# Dropout Layer.
-class Dropout(SequenceLayer):
-  ONLY_IN_TRAINING = True
-  LEARNABLE = False
-  _filter: np.ndarray
-
-  def __init__(self, prob):
-    self.prob = prob
-    super().__init__()
-
-  def __call__(self, i: Layer):
-    self._shape = i.shape
-    self._filter = np.ones((1, *i.shape))
-    super().__call__(i)
-    return self
-
-  def f(self, x: np.ndarray):
-    self._filter = np.where(np.random.rand(*self._filter.shape) > self.prob, 1.0, 0.0)
-    return x * self._filter
-
-  def df(self, dy: np.ndarray):
-    return dy * self._filter
-
-
-class AggregateLayer(Layer, ABC):  # TODO
-  def __call__(self, *i: Layer):
-    self._prev = i
-    return self

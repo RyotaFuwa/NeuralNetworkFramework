@@ -8,6 +8,7 @@ class Loss(ABC):
   x: np.ndarray  # output from network
   y: np.ndarray  # label
   loss: np.float32
+
   @abstractmethod
   def f(self, x: np.ndarray, y: np.ndarray):
     if x.shape != y.shape:

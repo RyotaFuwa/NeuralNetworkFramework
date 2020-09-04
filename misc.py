@@ -22,14 +22,13 @@ def to_one_hot(x):
   return one_hot.reshape(shape + (num_classes,))
 
 
-def split_data(nparray, ratio=0.2, random=True):
+def split_data(nparray, ratio=0.8, random=True):
   num_of_sample = nparray.shape[0]
   separate_point = int(num_of_sample * ratio)
   indices = np.arange(num_of_sample)
   if random:
     np.random.shuffle(indices)
-  return nparray[indices[:separate_point]], nparray[separate_point:]
-
+  return nparray[indices[:separate_point]], nparray[indices[separate_point:]]
 
 
 def random_like(w: np.ndarray, mue=0.0, sigma=1.0):
