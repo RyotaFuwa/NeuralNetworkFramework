@@ -7,7 +7,7 @@ from activations import Softmax
 class Loss(ABC):
   x: np.ndarray  # output from network
   y: np.ndarray  # label
-  loss: np.float32
+  loss: np.float
 
   @abstractmethod
   def f(self, x: np.ndarray, y: np.ndarray):
@@ -25,7 +25,6 @@ class Loss(ABC):
   @abstractmethod
   def df(self):
     """
-
     :return:
     """
 
@@ -41,8 +40,8 @@ class MSE(Loss):
 
   def df(self):
     batch_size = self.y.shape[0]
-    data_shape = self.y.shape[1:]
-    return 2.0 / sum(data_shape) * (self.x - self.y) / batch_size
+    num_of_weights = self.y.shape[1]
+    return 2.0 * (self.x - self.y) / num_of_weights / batch_size
 
 
 class CrossEntropy(Loss):

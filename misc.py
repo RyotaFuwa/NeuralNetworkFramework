@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+import time
 from copy import deepcopy
 from typing import Union, Tuple, List
 import numpy as np
@@ -44,6 +44,12 @@ def random_like(w: np.ndarray, mue=0.0, sigma=1.0):
   out = []
   helper(w, out)
   return np.array(out[0])
+
+
+def measure_time(f, *args, **kwargs):
+  start = time.time()
+  f(*args, **kwargs)
+  return time.time() - start
 
 
 def debug(a: np.ndarray, b: np.ndarray):

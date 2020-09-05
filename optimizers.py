@@ -31,15 +31,11 @@ class SGDUpdater(Updater):
   def __init__(self, w, learning_rate, momentum=-1.0):
     self.learning_rate = learning_rate
     self.momentum = momentum
-    if momentum > 0:
-      self.V = np.random.randn(*w.shape) * 0.0001
+    self.V = np.random.randn(*w.shape) * 0.0001
 
   def update(self, w, dw):
-    if self.momentum > 0:
-      self.V = self.momentum * self.V - self.learning_rate * dw
-      w += self.V
-    else:
-      w -= self.learning_rate * dw
+    self.V = self.momentum * self.V - self.learning_rate * dw
+    w += self.V
 
 
 class AdamUpdater(Updater):
@@ -86,7 +82,7 @@ class SGD(Optimizer):
   V: np.ndarray
   momentum: float
 
-  def __init__(self, learning_rate, momentum=-1, *args, **kwargs):
+  def __init__(self, learning_rate=0.01, momentum=0.0, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.learning_rate = learning_rate
     self.momentum = momentum

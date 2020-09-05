@@ -1,11 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Trainer import Trainer
-from layers import Input, Forward
-from losses import MSE
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.optimizers import SGD
+
 from misc import split_data
-from models import FNN
-from optimizers import SGD, Adam
 
 
 def linear_regression(a=1.0, b=0.0):
@@ -16,21 +15,18 @@ def linear_regression(a=1.0, b=0.0):
 
   # build simple FNN
   i = Input(1)
-  x = Forward(1)(i)
+  x = Dense(1)(i)
 
   # define trainer
-  trainer = Trainer(loss=MSE(), optimizer=SGD(0.0001, 0.8), batch_size=50, epochs=50)
-
   # create model
-  model = FNN(i, x, trainer)
+  model = Model(i, x)
 
   # training process
-  model.train(train_x, train_y)
+  model.compile(optimizer=SGD(0.0001, 0.8), loss='mse')
+  model.fit(train_x, train_y, batch_size=50, epochs=50)
 
   # predict
   y_hat = model.predict(test_x)
   plt.plot(test_x, test_y, 'b')
   plt.plot(test_x, y_hat, 'r')
   plt.show()
-
-
