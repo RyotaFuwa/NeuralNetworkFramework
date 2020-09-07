@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 
 from misc import normalize, to_one_hot, split_data
 from layers import Input, Dropout, Forward
-from models import FNN
+from activations import ReLU, Softmax, Sigmoid
+from models import Sequential
 from Trainer import Trainer
-from losses import MSE
+from losses import MSE, CrossEntropy
 from optimizers import Adam, SGD
 
 
@@ -23,53 +24,49 @@ def simple_plot(x, y):
   y = np.argmax(y, axis=1)
   y = [color[i] for i in y]
   plt.scatter(x[:, 0], x[:, 1], c=y)
-  plt.plot()
   plt.show()
 
 
-#demo
+# demo
 def binary_classification():
   def separate_label(data):
     X = normalize(data[:, :2].astype('float32'))
     Y = np.where(data[:, 2] == b'black', 0, 1)
     return X, Y
 
-  # simple example: binary classification of 2d float data
+  # prepare train data
   data_dir = "data/examples"
   train_data_path = os.path.join(data_dir, 'training.arff')
-  test_data_path = os.path.join(data_dir, 'test.arff')
   train_data = load_arff(train_data_path)
-  test_data = load_arff(test_data_path)
-
   train_x, train_y = separate_label(train_data)
   train_y = to_one_hot(train_y)
-  test_x, test_y = separate_label(test_data)
-  test_y = to_one_hot(test_y)
 
-  # simple example no. two
-  train_x = np.random.randn(1000, 2)
-  train_y = to_one_hot(np.where(train_x[:, 0] < train_x[:, 1], 1, 0))
   simple_plot(train_x, train_y)
-  train_x, test_x = split_data(train_x)
-  train_y, test_y = split_data(train_y)
-
-  simple_plot(test_x, test_y)
 
   # build simple FNN
   i = Input(2)
-  x = Forward(10)(i)
-  x = Forward(2)(x)
+  x = Forward(30, activation=Sigmoid())(i)
+  x = Forward(30, activation=Sigmoid())(i)
+  x = Forward(2, activation=Softmax())(x)
 
   # define trainer
-  trainer = Trainer(loss=MSE(), optimizer=Adam(0.5, 0.95, 0.97), batch_size=200, epochs=2000)
+  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(learning_rate=0.01), batch_size=1024, epochs=500)
 
   # create model
-  model = FNN(i, x, trainer)
+  model = Sequential(i, x, trainer)
+
+  print(model)
 
   # training process
   model.train(train_x, train_y)
 
+  plt.plot(range(len(model.history['loss'])), model.history['loss'])
+  plt.show()
+
   # predict
+  test_data_path = os.path.join(data_dir, 'test.arff')
+  test_data = load_arff(test_data_path)
+  test_x, _ = separate_label(test_data)
+
   y_hat = model.predict(test_x)
-  print(y_hat)
   simple_plot(test_x, y_hat)

@@ -1,23 +1,27 @@
-from _layers import SequenceLayer
 from abc import ABC
 import numpy as np
+from _layers import SequentialLayer
 
 
-class Activation(SequenceLayer, ABC):
+class Activation(SequentialLayer, ABC):
   LEARNABLE = False
   ONLY_IN_TRAINING = False
 
-  def __init__(self, i: SequenceLayer = None):
+  def __init__(self, i: SequentialLayer = None):
     super().__init__()
     if i is not None:
       self.__call__(i)
+    else:
+      self._shape = ()
 
   def __call__(self, i):
-    self._shape = i.shape
     super().__call__(i)
+    self._shape = i.shape
 
 
 class Sigmoid(Activation):
+  y: np.ndarray
+
   def f(self, x: np.ndarray) -> np.ndarray:
     self.y = 1.0 / (1.0 + np.exp(-x))
     return self.y
@@ -27,15 +31,20 @@ class Sigmoid(Activation):
 
 
 class ReLU(Activation):
+  x: np.ndarray
+
   def f(self, x: np.ndarray) -> np.ndarray:
     self.x = x
     return np.where(x > 0.0, x, 0.0)
 
   def df(self, dy: np.ndarray) -> np.ndarray:
-    return np.where(self.x > 0.0, 1.0, 0.0) * dy
+    k = np.where(self.x > 0.0, 1.0, 0.0) * dy
+    return k
 
 
 class Tanh(Activation):
+  x: np.ndarray
+
   def f(self, x: np.ndarray) -> np.ndarray:
     self.x = x
     return np.tanh(x)
@@ -45,6 +54,8 @@ class Tanh(Activation):
 
 
 class Softmax(Activation):  # Assuming the dim of input is 2 (sample, dim_of_data)
+  y: np.ndarray
+
   def f(self, x: np.ndarray) -> np.ndarray:
     max_v = np.max(x, axis=-1).reshape((*x.shape[:-1], 1))
     self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v), axis=-1).reshape((*x.shape[:-1], 1))

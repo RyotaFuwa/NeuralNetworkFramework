@@ -1,7 +1,8 @@
 import copy
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 import numpy as np
+
 from optimizers import Updater
 
 TYPE_SHAPE = Union[int, Tuple[int]]
@@ -18,13 +19,9 @@ class Layer(ABC, object):
   ONLY_IN_TRAINING: bool  # if True, the layer has to return an output with the same shape of the input
   LEARNABLE: bool  # if True, it has weights in side to be learned
 
-  updater: Updater
-
-  _shape: Tuple[int]  # shape of the layer (i.e the shape of output of its layer for one sample not for mini-batch data)
-  _w: np.ndarray  # learnable weights
-  _dw: np.ndarray  # dL/dw (L: loss function) It must have the same shape of _w
-  _prev: Tuple['Layer']
-  _next: Tuple['Layer']
+  _shape: Tuple[int]  # shape of the layer (i.e the shape of the output from this layer => [# of sample, *shape])
+  _prev: 'Layer'
+  _next: 'Layer'
 
   @property
   def shape(self):
@@ -33,22 +30,6 @@ class Layer(ABC, object):
   @shape.getter
   def shape(self):
     return self._shape
-
-  @property
-  def w(self):
-    pass
-
-  @w.getter
-  def w(self):
-    return self._w
-
-  @property
-  def dw(self):
-    pass
-
-  @dw.getter
-  def dw(self):
-    return self._dw
 
   @property
   def prev(self):
@@ -85,19 +66,41 @@ class Layer(ABC, object):
     return class_txt + w_txt + param_txt
 
 
-class SequenceLayer(Layer, ABC):
-  ONLY_IN_TRAINING = False
-  LEARNABLE = True
-
-  def __init__(self):
+class SequentialLayer(Layer, ABC):
+  def __init__(self, activation: Optional['Activation'] = None):
     self._prev = None
-    self._next = None
-    self._w = None
-    self._dw = None
+    self._next = activation
+    if activation is not None:
+      activation(self)
 
   def __call__(self, i: Layer):
     self._prev = i
     i._next = self
+    if self._next is not None:
+      return self._next
     return self
 
+
+class LearnableSequential(SequentialLayer, ABC):
+  ONLY_IN_TRAINING = False
+  LEARNABLE = True
+  _w: np.ndarray  # learnable weights
+  _dw: np.ndarray  # dL/dw (L: loss function) It must have the same shape of _w
+  updater: Updater
+
+  @property
+  def w(self):
+    pass
+
+  @w.getter
+  def w(self):
+    return self._w
+
+  @property
+  def dw(self):
+    pass
+
+  @dw.getter
+  def dw(self):
+    return self._dw
 

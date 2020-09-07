@@ -8,7 +8,9 @@ from misc import split_data
 
 
 def linear_regression(a=1.0, b=0.0):
-  X = np.linspace(-100, 100, 200).reshape((-1, 1))
+  X = np.linspace(-100, 100, 200)
+  X /= X.max()
+  X = X.reshape((-1, 1))
   [train_x, test_x] = split_data(X, 0.8, True)
   train_y = a * train_x + b
   test_y = a * test_x + b
@@ -22,7 +24,7 @@ def linear_regression(a=1.0, b=0.0):
   model = Model(i, x)
 
   # training process
-  model.compile(optimizer=SGD(0.0001, 0.8), loss='mse')
+  model.compile(optimizer='adam', loss='mse')
   model.fit(train_x, train_y, batch_size=50, epochs=50)
 
   # predict

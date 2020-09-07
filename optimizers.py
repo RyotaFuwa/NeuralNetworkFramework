@@ -28,10 +28,10 @@ class RandomUpdater(Updater):
 
 
 class SGDUpdater(Updater):
-  def __init__(self, w, learning_rate, momentum=-1.0):
+  def __init__(self, layer, learning_rate, momentum=-1.0):
     self.learning_rate = learning_rate
     self.momentum = momentum
-    self.V = np.random.randn(*w.shape) * 0.0001
+    self.V = np.random.randn(*layer.w.shape) * 0.01
 
   def update(self, w, dw):
     self.V = self.momentum * self.V - self.learning_rate * dw
@@ -39,22 +39,23 @@ class SGDUpdater(Updater):
 
 
 class AdamUpdater(Updater):
-  def __init__(self, w, learning_rate, beta1, beta2):
+  def __init__(self, layer, learning_rate, beta1, beta2):
     self.learning_rate = learning_rate
     self.beta1 = beta1
     self.beta2 = beta2
-    self.m = random_like(w, mue=0, sigma=0.001)
-    self.v = random_like(w, mue=0, sigma=0.001)
+    self.m = np.random.randn(*layer.w.shape) * 0.01
+    self.v = np.abs(np.random.randn(*layer.w.shape)) * 0.01
     self.time = 0
 
-  def update(self, w, dw):
+  def update(self, w: np.ndarray, dw: np.ndarray):
     self.time += 1
     self.m = self.beta1 * self.m + (1.0 - self.beta1) * dw
-    self.v = self.beta2 * self.v + (1.0 - self.beta2) * dw ** 2
+    self.v = self.beta2 * self.v + (1.0 - self.beta2) * np.square(dw)
 
-    m_hat = self.m / (1.0 - self.beta1 ** self.time)
-    v_hat = self.v / (1.0 - self.beta2 ** self.time)
-    w -= self.learning_rate * m_hat / (v_hat ** 0.5 + EPSILON)
+    m_hat = self.m / (1.0 - np.power(self.beta1, self.time))
+    v_hat = self.v / (1.0 - np.power(self.beta2, self.time))
+    k = self.learning_rate * m_hat / (np.sqrt(v_hat) + EPSILON)
+    w -= k
 
 
 class Optimizer(ABC):
@@ -92,7 +93,7 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
-  def __init__(self, learning_rate, beta1, beta2, *args, **kwargs):
+  def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.learning_rate = learning_rate
     self.beta1 = beta1
