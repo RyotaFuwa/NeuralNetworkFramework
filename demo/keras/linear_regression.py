@@ -11,7 +11,7 @@ def linear_regression(a=1.0, b=0.0):
   X = np.linspace(-100, 100, 200)
   X /= X.max()
   X = X.reshape((-1, 1))
-  [train_x, test_x] = split_data(X, 0.8, True)
+  [train_x, test_x] = split_data(X, ratio=0.8, random=True)
   train_y = a * train_x + b
   test_y = a * test_x + b
 

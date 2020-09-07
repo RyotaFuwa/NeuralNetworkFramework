@@ -22,7 +22,7 @@ def simple_plot(x, y, a, b):
 def linear_classification(a=1.0, b=0.0):
   X = np.random.randn(500, 2)
   X /= X.max()
-  [train_x, test_x] = split_data(X, 0.8, True)
+  [train_x, test_x] = split_data(X, ratio=0.8, random=True)
   train_y = to_one_hot(np.where(a * train_x[:, 0] + b > train_x[:, 1], 1, 0))
   test_y = np.where(a * test_x[:, 0] + b > test_x[:, 1], 1, 0)
 

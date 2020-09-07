@@ -15,15 +15,15 @@ from demo.keras.binary_classification import binary_classification as binary_cla
 
 
 def main():
-  # linear regression
+  """Linear Regression"""
   linear_params = {'a': 1.0, 'b': 0.0}
   # linear_regression(**linear_params)
   # linear_regression_keras(**linear_params)
 
-  # linear classification
-  linear_classification(**linear_params)
+  """Linear Classification"""
+  # linear_classification(**linear_params)
 
-  # universal_approximation
+  """Universal Approximation"""
   # X = np.linspace(-3.14, 3.14, 200)
   # X = X.reshape((-1, 1))
   # f = np.sin
@@ -32,6 +32,7 @@ def main():
   # universal_approximation(f, X)
   # universal_approximation_keras(f, X)
 
+  """Binary Classification"""
   # binary_classification()
   # binary_classification_keras()
 

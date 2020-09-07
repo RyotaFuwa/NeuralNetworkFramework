@@ -8,7 +8,7 @@ from misc import split_data
 
 
 def universal_approximation(f, x):
-  [train_x, test_x] = split_data(x, 0.8, True)
+  [train_x, test_x] = split_data(x, ratio=0.8, random=True)
   train_y = np.sin(train_x)
   test_y = np.sin(test_x)
 
