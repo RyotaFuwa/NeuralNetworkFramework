@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Tuple, Union, Optional
 import numpy as np
+import matplotlib.pyplot as plt
 from layers import Layer, SequentialLayer, Input
 from Trainer import Trainer
 from losses import CrossEntropy, SoftmaxWithCrossEntropy
@@ -43,11 +44,18 @@ class Model(ABC):
       if current.LEARNABLE:
         current.updater = trainer.optimizer(current)
       current = current.next
+    
+    # analyzer
+    # def err_handler(t, flag):
+    #   if t == 'underflow':
+    #     raise Exception(f'type: {t}, flag: {flag}')
+    # np.seterrcall(err_handler)
+    #
+    # np.seterr(all='raise')
 
   def train(self, x: np.ndarray, y: np.ndarray):
-    self.history = {'loss': []}
-
     # setup variables
+    self.history = {'loss': []}
     num_of_samples = x.shape[0]
     num_of_cycles = num_of_samples * self.trainer.epochs // self.trainer.batch_size
     if num_of_cycles < 1:
@@ -57,22 +65,20 @@ class Model(ABC):
     for i in range(num_of_cycles):
       self.cycle = i
       epoch = int(i * self.trainer.batch_size / num_of_samples)
-
-      # get mini-batch
       batch_in, label = self.get_batch(x, y, batch_size=self.trainer.batch_size, shuffle=self.trainer.shuffle)
 
-      # forward calculation
+      # forward propagation (calculation)
       out = self.f(batch_in)
       loss_value = self.trainer.loss.f(out, label)
-      self.history['loss'].append(loss_value)
 
-      # print info
+      # data handling
+      if epoch >= len(self.history['loss']):
+        self.history['loss'].append(loss_value)
       if self.trainer.info:
         # calculate loss values
-        print("epoch: {}:: Loss: {:<10.3f}".format(
-          epoch, loss_value))
+        print("epoch: {}:: Loss: {:<10.4}".format(epoch, loss_value))
 
-      # back propagation
+      # back propagation (optimization)
       dy = self.trainer.loss.df()  # dy: du/d(out) dx.shape == label.shape
       self.df(dy)
 

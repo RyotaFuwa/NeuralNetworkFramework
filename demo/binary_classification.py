@@ -35,22 +35,20 @@ def binary_classification():
     return X, Y
 
   # prepare train data
-  data_dir = "data/examples"
+  data_dir = "data/examples/binary_classification"
   train_data_path = os.path.join(data_dir, 'training.arff')
   train_data = load_arff(train_data_path)
   train_x, train_y = separate_label(train_data)
   train_y = to_one_hot(train_y)
 
-  simple_plot(train_x, train_y)
-
   # build simple FNN
   i = Input(2)
-  x = Forward(30, activation=Sigmoid())(i)
-  x = Forward(30, activation=Sigmoid())(i)
+  x = Forward(30, activation=ReLU())(i)
+  x = Forward(30, activation=ReLU())(i)
   x = Forward(2, activation=Softmax())(x)
 
   # define trainer
-  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(learning_rate=0.01), batch_size=1024, epochs=500)
+  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(learning_rate=0.1), batch_size=1024, epochs=500)
 
   # create model
   model = Sequential(i, x, trainer)

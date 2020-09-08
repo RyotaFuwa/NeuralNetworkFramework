@@ -18,11 +18,10 @@ def linear_regression(a=1.0, b=0.0):
   test_y = a * test_x + b
 
   i = Input(1)
-  x = Forward(1, activation=ReLU())(i)
-  x = Forward(1)(x)
+  x = Forward(1)(i)
 
   # define trainer
-  trainer = Trainer(loss=MSE(), optimizer=Adam(0.1), batch_size=50, epochs=50)
+  trainer = Trainer(loss=MSE(), optimizer=SGD(learning_rate=0.1), batch_size=50, epochs=50)
 
   # create model
   model = Sequential(i, x, trainer)
@@ -32,8 +31,6 @@ def linear_regression(a=1.0, b=0.0):
   # training process
   model.train(train_x, train_y)
 
-  plt.plot(range(len(model.history['loss'])), model.history['loss'])
-  plt.show()
 
   # predict
   y_hat = model.predict(test_x)

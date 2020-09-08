@@ -33,7 +33,7 @@ def linear_classification(a=1.0, b=0.0):
   x = Forward(2, activation=Softmax())(i)
 
   # define trainer
-  trainer = Trainer(loss=CrossEntropy(), optimizer=Adam(0.1), batch_size=50, epochs=50)
+  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(learning_rate=0.1), batch_size=50, epochs=50)
 
   # create model
   model = Sequential(i, x, trainer)

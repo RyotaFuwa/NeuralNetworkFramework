@@ -41,23 +41,21 @@ def simple_plot(x, y):
 def binary_classification():
 
   # prepare train data
-  data_dir = "data/examples"
+  data_dir = "data/examples/binary_classification"
   train_data_path = os.path.join(data_dir, 'training.arff')
   train_x, train_y = load_arff(train_data_path)
-
-  simple_plot(train_x, train_y)
 
   model = Sequential()
   model.add(Dense(30, activation='relu', input_shape=(2,)))
   model.add(Dense(30, activation='relu'))
   model.add(Dense(2, activation='softmax'))
   model.compile(
-    optimizer=Adam(learning_rate=0.1),
+    # optimizer=Adam(learning_rate=0.1),
+    optimizer='sgd',
     loss='binary_crossentropy',
     metrics=["accuracy"]
   )
   model.fit(train_x, train_y, batch_size=1024, epochs=500)
-
 
   # predict
   test_data_path = os.path.join(data_dir, 'test.arff')

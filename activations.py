@@ -38,8 +38,7 @@ class ReLU(Activation):
     return np.where(x > 0.0, x, 0.0)
 
   def df(self, dy: np.ndarray) -> np.ndarray:
-    k = np.where(self.x > 0.0, 1.0, 0.0) * dy
-    return k
+    return np.where(self.x > 0.0, 1.0, 0.0) * dy
 
 
 class Tanh(Activation):
@@ -58,7 +57,7 @@ class Softmax(Activation):  # Assuming the dim of input is 2 (sample, dim_of_dat
 
   def f(self, x: np.ndarray) -> np.ndarray:
     max_v = np.max(x, axis=-1).reshape((*x.shape[:-1], 1))
-    self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v), axis=-1).reshape((*x.shape[:-1], 1))
+    self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v), axis=-1).reshape((-1, 1))
     return self.y
 
   def df(self, dy: np.ndarray) -> np.ndarray:
