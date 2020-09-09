@@ -8,7 +8,7 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
-from misc import normalize, to_one_hot
+from misc.utils import normalize, to_one_hot
 
 # for mac
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -51,11 +51,11 @@ def binary_classification():
   model.add(Dense(2, activation='softmax'))
   model.compile(
     # optimizer=Adam(learning_rate=0.1),
-    optimizer='sgd',
+    optimizer='adam',
     loss='binary_crossentropy',
     metrics=["accuracy"]
   )
-  model.fit(train_x, train_y, batch_size=1024, epochs=500)
+  model.fit(train_x, train_y, batch_size=256, epochs=500)
 
   # predict
   test_data_path = os.path.join(data_dir, 'test.arff')

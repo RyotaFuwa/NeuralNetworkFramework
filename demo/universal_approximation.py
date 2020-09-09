@@ -2,10 +2,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from Trainer import Trainer
-from activations import ReLU, Sigmoid, Tanh
-from layers import Input, Forward
-from losses import MSE
-from misc import split_data
+from layers import Input, Dense
+from misc.utils import split_data
 from models import Sequential
 from optimizers import SGD, Adam
 
@@ -19,20 +17,20 @@ def universal_approximation(f, x):
 
   # build simple FNN
   i = Input(1)
-  x = Forward(50, activation=ReLU())(i)
-  x = Forward(1)(x)
+  x = Dense(50, activation='relu')(i)
+  x = Dense(1)(x)
 
   # define trainer
-  trainer = Trainer(loss=MSE(), optimizer=Adam(learning_rate=0.01, clipvalue=1.5), batch_size=50, epochs=750)
+  trainer = Trainer(loss='mse', optimizer=Adam(learning_rate=0.01), batch_size=50, epochs=750)
 
   # create model
   model = Sequential(i, x, trainer)
 
-  print(model)
+  model.summary()
 
   # training process
   start = time.time()
-  model.train(train_x, train_y)
+  model.fit(train_x, train_y)
   print(time.time() - start)
 
   plt.plot(range(len(model.history['loss'])), model.history['loss'])

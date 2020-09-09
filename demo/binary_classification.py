@@ -4,8 +4,8 @@ import pandas as pd
 from scipy.io import arff
 import matplotlib.pyplot as plt
 
-from misc import normalize, to_one_hot, split_data
-from layers import Input, Dropout, Forward
+from misc.utils import normalize, to_one_hot, split_data
+from layers import Input, Dropout, Dense
 from activations import ReLU, Softmax, Sigmoid
 from models import Sequential
 from Trainer import Trainer
@@ -43,20 +43,20 @@ def binary_classification():
 
   # build simple FNN
   i = Input(2)
-  x = Forward(30, activation=ReLU())(i)
-  x = Forward(30, activation=ReLU())(i)
-  x = Forward(2, activation=Softmax())(x)
+  x = Dense(30, activation='relu')(i)
+  x = Dense(30, activation='relu')(x)
+  x = Dense(2, activation='softmax')(x)
 
   # define trainer
-  trainer = Trainer(loss=CrossEntropy(), optimizer=SGD(learning_rate=0.1), batch_size=1024, epochs=500)
+  trainer = Trainer(loss='cross_entropy', optimizer='adam', batch_size=256, epochs=500)
 
   # create model
   model = Sequential(i, x, trainer)
 
-  print(model)
+  model.summary()
 
   # training process
-  model.train(train_x, train_y)
+  model.fit(train_x, train_y)
 
   plt.plot(range(len(model.history['loss'])), model.history['loss'])
   plt.show()

@@ -1,28 +1,29 @@
 from abc import ABC
 import numpy as np
-from _layers import SequentialLayer
+from _layer import _Layer
 
 
-class Activation(SequentialLayer, ABC):
-  LEARNABLE = False
-  ONLY_IN_TRAINING = False
-
-  def __init__(self, i: SequentialLayer = None):
+class Activation(_Layer, ABC):
+  def __init__(self):
     super().__init__()
-    if i is not None:
-      self.__call__(i)
-    else:
-      self._shape = ()
 
   def __call__(self, i):
+    self.shape = i.shape
     super().__call__(i)
-    self._shape = i.shape
+
+
+class Linear(Activation):
+  def f(self, x: np.ndarray, training: bool) -> np.ndarray:
+    return x
+
+  def df(self, dy: np.ndarray) -> np.ndarray:
+    return dy
 
 
 class Sigmoid(Activation):
   y: np.ndarray
 
-  def f(self, x: np.ndarray) -> np.ndarray:
+  def f(self, x: np.ndarray, training: bool) -> np.ndarray:
     self.y = 1.0 / (1.0 + np.exp(-x))
     return self.y
 
@@ -31,20 +32,23 @@ class Sigmoid(Activation):
 
 
 class ReLU(Activation):
-  x: np.ndarray
+  mask: np.ndarray
 
-  def f(self, x: np.ndarray) -> np.ndarray:
-    self.x = x
-    return np.where(x > 0.0, x, 0.0)
+  def f(self, x: np.ndarray, training: bool) -> np.ndarray:
+    self.mask = x <= 0
+    out = x.copy()
+    out[self.mask] = 0
+    return out
 
   def df(self, dy: np.ndarray) -> np.ndarray:
-    return np.where(self.x > 0.0, 1.0, 0.0) * dy
+    dy[self.mask] = 0
+    return dy
 
 
 class Tanh(Activation):
   x: np.ndarray
 
-  def f(self, x: np.ndarray) -> np.ndarray:
+  def f(self, x: np.ndarray, training: bool) -> np.ndarray:
     self.x = x
     return np.tanh(x)
 
@@ -52,12 +56,12 @@ class Tanh(Activation):
     return 1.0 / np.square(np.cosh(self.x)) * dy
 
 
-class Softmax(Activation):  # Assuming the dim of input is 2 (sample, dim_of_data)
+class Softmax(Activation):
   y: np.ndarray
 
-  def f(self, x: np.ndarray) -> np.ndarray:
-    max_v = np.max(x, axis=-1).reshape((*x.shape[:-1], 1))
-    self.y = np.exp(x - max_v) / np.sum(np.exp(x - max_v), axis=-1).reshape((-1, 1))
+  def f(self, x: np.ndarray, training: bool) -> np.ndarray:
+    x = x - np.max(x, axis=-1, keepdims=True)
+    self.y = np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
     return self.y
 
   def df(self, dy: np.ndarray) -> np.ndarray:
@@ -75,9 +79,17 @@ class Softmax(Activation):  # Assuming the dim of input is 2 (sample, dim_of_dat
     return np.array(out)
 
 
-class Linear(Activation):
-  def f(self, x: np.ndarray) -> np.ndarray:
-    return x
+REGISTERED_ACTIVATION = {
+  'linear': Linear,
+  'sigmoid': Sigmoid,
+  'relu': ReLU,
+  'tanh': Tanh,
+  'softmax': Softmax,
+}
 
-  def df(self, dy: np.ndarray) -> np.ndarray:
-    return dy
+
+def activation_loader(key: str = ''):
+  if key in REGISTERED_ACTIVATION:
+    return REGISTERED_ACTIVATION[key]()
+  else:
+    return None

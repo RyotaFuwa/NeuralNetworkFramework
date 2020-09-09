@@ -2,14 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import SGD, Adam
 
-from misc import split_data
+from misc.utils import split_data
 
 
 def linear_regression(a=1.0, b=0.0):
   X = np.linspace(-100, 100, 200)
-  X /= X.max()
   X = X.reshape((-1, 1))
   [train_x, test_x] = split_data(X, ratio=0.8, random=True)
   train_y = a * train_x + b
@@ -19,12 +18,11 @@ def linear_regression(a=1.0, b=0.0):
   i = Input(1)
   x = Dense(1)(i)
 
-  # define trainer
   # create model
   model = Model(i, x)
 
   # training process
-  model.compile(optimizer='adam', loss='mse')
+  model.compile(optimizer=Adam(learning_rate=0.1), loss='mse')
   model.fit(train_x, train_y, batch_size=50, epochs=50)
 
   # predict

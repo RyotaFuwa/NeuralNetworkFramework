@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from misc import random_like
 
-EPSILON = np.finfo(float).eps
+EPSILON = 1e-07
 
 """Optimizer Design
 an instance of this class can store the reference to the weights of all layers in the model
@@ -14,7 +13,7 @@ class Updater(ABC):
   def __init__(self, *args, **kwargs):
     self.clipnorm = kwargs.get('clipnorm')
     self.clipvalue = kwargs.get('clipvalue')
-    self.epsilon = kwargs.get('epsilon', 1e-07)
+    self.epsilon = kwargs.get('epsilon', EPSILON)
 
   @abstractmethod
   def update(self, w, dw):
@@ -31,15 +30,6 @@ class Updater(ABC):
 
   def __call__(self, w, dw):
     self.update(w, dw)
-
-
-class RandomUpdater(Updater):
-  def __init__(self, w, learning_rate, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self.learning_rate = learning_rate
-
-  def update(self, w, dw):
-    w -= self.learning_rate * random_like(self.w)
 
 
 class SGDUpdater(Updater):
@@ -94,17 +84,6 @@ class Optimizer(ABC):
     """return instance of Updater class defined in Optimizer class"""
 
 
-class RandomOptimizer(Optimizer):
-  learning_rate: float
-
-  def __init__(self, learning_rate, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self.learning_rate = learning_rate
-
-  def __call__(self, layer):
-    return RandomUpdater(layer.w, self.learning_rate, *self.args, **self.kwargs)
-
-
 class SGD(Optimizer):
   V: np.ndarray
   momentum: float
@@ -130,3 +109,13 @@ class Adam(Optimizer):
     return AdamUpdater(w, self.learning_rate, self.beta1, self.beta2, *self.args, **self.kwargs)
 
 
+REGISTERED_OPTIMIZERS = {
+  'sgd': SGD,
+  'adam': Adam,
+}
+
+
+def optimizer_load(key: str):
+  if key in REGISTERED_OPTIMIZERS:
+    return REGISTERED_OPTIMIZERS[key]()
+  return None

@@ -1,12 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Trainer import Trainer
-from layers import Input, Dense
-from activations import Softmax
-from losses import CrossEntropy
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.optimizers import SGD, Adam
+
 from misc.utils import split_data, to_one_hot
-from models import Sequential
-from optimizers import SGD, Adam
 
 
 def simple_plot(x, y, a, b):
@@ -28,33 +26,23 @@ def linear_classification(a=1.0, b=0.0):
   train_y = to_one_hot(train_y)
   test_y = np.where(a * test_x[:, 0] + b > test_x[:, 1], 1, 0)
 
+
   # build simple FNN
   i = Input(2)
   x = Dense(2, activation='softmax')(i)
 
   # define trainer
-  trainer = Trainer(
-    loss='cross_entropy',
-    optimizer=Adam(learning_rate=0.1, clipvalue=1.0),
-    batch_size=50,
-    epochs=50,
-    metrics=['accuracy']
-  )
 
   # create model
-  model = Sequential(i, x, trainer)
+  model = Model(i, x)
+  model.compile(optimizer=Adam(learning_rate=0.1), loss='binary_crossentropy', metrics=['accuracy'])
 
   model.summary()
 
   # training process
-  model.fit(train_x, train_y)
-
-  plt.plot(model.history['loss'])
-  plt.show()
+  model.fit(train_x, train_y, batch_size=50, epochs=50)
 
   # predict
   y_hat = model.predict(test_x)
   y_hat = np.argmax(y_hat, axis=1)
   simple_plot(test_x, y_hat, a, b)
-
-

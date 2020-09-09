@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
-from misc import split_data
+from misc.utils import split_data
 
 
 def universal_approximation(f, x):
