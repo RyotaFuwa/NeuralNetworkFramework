@@ -4,7 +4,7 @@ from Trainer import Trainer
 from layers import Input, Dense
 from misc.utils import split_data
 from models import Sequential
-from optimizers import SGD, Adam
+from optimizers.optimizers import Adam
 
 
 def linear_regression(a=1.0, b=0.0):
@@ -18,7 +18,7 @@ def linear_regression(a=1.0, b=0.0):
   x = Dense(1)(i)
 
   # define trainer
-  trainer = Trainer(loss='mse', optimizer=Adam(learning_rate=0.5), batch_size=50, epochs=50)
+  trainer = Trainer(loss='mse', optimizer=Adam(learning_rate=0.2), batch_size=50, epochs=50)
 
   # create model
   model = Sequential(i, x, trainer)

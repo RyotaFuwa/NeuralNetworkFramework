@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from misc import split_data
+from misc.utils import split_data
 
 
 def multi_classification(csv_file_path):

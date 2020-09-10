@@ -5,7 +5,7 @@ from Trainer import Trainer
 from layers import Input, Dense
 from misc.utils import split_data
 from models import Sequential
-from optimizers import SGD, Adam
+from optimizers.optimizers import SGD, Adam, ExponentialDecay
 
 
 def universal_approximation(f, x):
@@ -21,7 +21,8 @@ def universal_approximation(f, x):
   x = Dense(1)(x)
 
   # define trainer
-  trainer = Trainer(loss='mse', optimizer=Adam(learning_rate=0.01), batch_size=50, epochs=750)
+  schedule = ExponentialDecay(initial_learning_rate=0.01, decay_rate=0.75)
+  trainer = Trainer(loss='mse', optimizer=Adam(learning_rate=schedule), batch_size=50, epochs=750)
 
   # create model
   model = Sequential(i, x, trainer)

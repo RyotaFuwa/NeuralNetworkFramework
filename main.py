@@ -21,16 +21,16 @@ def main():
   # linear_regression_keras(**linear_params)
 
   """Linear Classification"""
-  linear_classification(**linear_params)
+  # linear_classification(**linear_params)
   # linear_classification_keras(**linear_params)
 
   """Universal Approximation"""
-  # X = np.linspace(-3.14, 3.14, 500)
-  # X = X.reshape((-1, 1))
-  # f = np.sin
-  # plt.plot(X, f(X))
-  # plt.show()
-  # universal_approximation(f, X)
+  X = np.linspace(-3.14, 3.14, 500)
+  X = X.reshape((-1, 1))
+  f = np.sin
+  plt.plot(X, f(X))
+  plt.show()
+  universal_approximation(f, X)
   # universal_approximation_keras(f, X)
 
   """Binary Classification"""

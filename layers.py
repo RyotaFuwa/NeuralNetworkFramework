@@ -4,14 +4,13 @@ from _layer import _Layer
 from misc.errors import ShapeIncompatible, NetworkNotReady
 from activations import activation_loader, Activation
 from misc.types import SHAPE, shape2tuple
-from optimizers import Updater
 
 
 class Layer(_Layer, ABC):
   """layer with learnable weights."""
   _w: np.ndarray  # w: learnable weights
   _dw: np.ndarray  # dw: dL/dw
-  updater: Updater
+  updater: 'Updater'
 
   @property
   def w(self):
@@ -94,6 +93,8 @@ class Mat(Layer):
 
   def df(self, dy: np.ndarray) -> np.ndarray:
     self._dw = self.x.T.dot(dy)  # dy/dw
+
+    self.updater.update(self._w, self._dw)
     return self._w.T.dot(dy)  # dy/dx
 
 
@@ -124,7 +125,7 @@ class Dense(Layer):
     da = self.x.T.dot(dy)
     self._dw = np.concatenate((da, db))  # dL/dw
 
-    self.updater(self._w, self._dw)
+    self.updater.update(self._w, self._dw)
     return dy.dot(da.T)  # dL/dx
 
 

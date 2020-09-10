@@ -2,11 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Trainer import Trainer
 from layers import Input, Dense
-from activations import Softmax
-from losses import CrossEntropy
 from misc.utils import split_data, to_one_hot
 from models import Sequential
-from optimizers import SGD, Adam
+from optimizers.optimizers import Adam
 
 
 def simple_plot(x, y, a, b):
@@ -19,14 +17,14 @@ def simple_plot(x, y, a, b):
   plt.show()
 
 
-def linear_classification(a=1.0, b=0.0):
+def linear_classification(a=1.0, b=0.0, graph=False):
+
+  # prepare data
   x = np.linspace(-100, 100, 200)
   y = a * x + b
   X = np.array(list(zip(x, y))) + np.random.randn(200, 2) * 100
-  Y = np.where(a * X[:, 0] + b > X[:, 1], 1, 0)
+  Y = to_one_hot(np.where(a * X[:, 0] + b > X[:, 1], 1, 0))
   (train_x, train_y), (test_x, test_y) = split_data(X, Y, ratio=0.8, random=True)
-  train_y = to_one_hot(train_y)
-  test_y = np.where(a * test_x[:, 0] + b > test_x[:, 1], 1, 0)
 
   # build simple FNN
   i = Input(2)
@@ -35,7 +33,7 @@ def linear_classification(a=1.0, b=0.0):
   # define trainer
   trainer = Trainer(
     loss='cross_entropy',
-    optimizer=Adam(learning_rate=0.1, clipvalue=1.0),
+    optimizer=Adam(learning_rate=0.05),
     batch_size=50,
     epochs=50,
     metrics=['accuracy']
@@ -48,13 +46,13 @@ def linear_classification(a=1.0, b=0.0):
 
   # training process
   model.fit(train_x, train_y)
+  print(model.evaluate(test_x, test_y))
 
-  plt.plot(model.history['loss'])
-  plt.show()
+  if graph:
+    plt.plot(model.history['loss'])
+    plt.show()
 
-  # predict
-  y_hat = model.predict(test_x)
-  y_hat = np.argmax(y_hat, axis=1)
-  simple_plot(test_x, y_hat, a, b)
-
-
+    # predict
+    y_hat = model.predict(test_x)
+    y_hat = np.argmax(y_hat, axis=1)
+    simple_plot(test_x, y_hat, a, b)

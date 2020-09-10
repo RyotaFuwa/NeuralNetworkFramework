@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Union, Optional
+from typing import Tuple, Optional
 import numpy as np
-
-from optimizers import Updater
-
 
 """Design Assumption:
  Shape of each layer is the shape of one sample (i.e it represents shape of one sample data, not mini-batch data).

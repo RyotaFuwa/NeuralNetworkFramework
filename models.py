@@ -1,3 +1,4 @@
+from _collections import deque
 from abc import ABC, abstractmethod
 from typing import Tuple, Union, Optional
 import numpy as np
@@ -19,7 +20,10 @@ class Model(ABC):
   tail: _Layer
   trainer: Trainer
 
-  loss_value: np.float
+  loss_value: float
+
+  accuracy_deque: deque
+  accuracy_sum: float
 
   current_epoch: int
   history: dict
@@ -43,7 +47,11 @@ class Model(ABC):
     """back propagation: calculate dy and update layer.w"""
 
   def initialize(self):
+    """initialize model params and layers"""
     self.current_epoch = 0
+
+    self.accuracy_deque = deque()
+    self.accuracy_sum = 0
 
     # initialize history
     for key in self.trainer.metrics:
@@ -74,6 +82,8 @@ class Model(ABC):
       if epoch_changed:
         self.current_epoch = new_epoch
 
+      self.trainer.optimizer.update()
+
       x_min_batch, y_min_batch = self.get_batch(x, y, batch_size=self.trainer.batch_size, shuffle=self.trainer.shuffle, step=i)
 
       # forward propagation (calculation)
@@ -87,33 +97,52 @@ class Model(ABC):
 
       # data handling and hold metric in history
       if epoch_changed:
-        if 'loss' in self.history:
-          self.history['loss'].append(loss_value)
+        for metric in self.trainer.metrics:
+          if metric == 'loss':
+            self.history[metric].append(self.get_metric(y_hat_min_batch, y_min_batch, metric))
 
-        if 'accuracy' in self.history:
-          if self.trainer.loss is CrossEntropy:
-            y_hat_predict = np.argmax(y_hat_min_batch, axis=-1)
-            y_predict = np.argmax(y_min_batch, axis=-1)
-          elif self.trainer.loss is SparseCrossEntropy:
-            y_hat_predict = np.argmax(y_hat_min_batch, axis=-1)
-            y_predict = y_min_batch.reshape((-1))
-          else:
-            y_hat_predict = y_hat_min_batch
-            y_predict = y_min_batch
-          accuracy = np.count_nonzero(y_hat_predict == y_predict) / y_hat_predict.shape[0]
-          if self.current_epoch > 1:
-            accuracy = (self.history['accuracy'][-1] * (self.current_epoch - 1) + accuracy) / self.current_epoch
-          self.history['accuracy'].append(accuracy)
+          if 'accuracy' in self.history:
+            accuracy = self.get_metric(y_hat_min_batch, y_min_batch, 'accuracy')
+            self.accuracy_deque.append(accuracy)
+            self.accuracy_sum += accuracy
+            if len(self.accuracy_deque) >= 100:
+              self.accuracy_sum -= self.accuracy_deque.popleft()
+            accuracy = self.accuracy_sum / len(self.accuracy_deque)
+            self.history['accuracy'].append(accuracy)
 
-        if self.trainer.info:
+        if self.trainer.verbose:
           # calculate loss values
           info_line = f"epoch: {self.current_epoch}:: "
           for key in self.trainer.metrics:
-            info_line += f" - {key}: {self.history[key][-1]:8.4f}"
+            info_line += f" - {key}: {self.history[key][-1]:.4f}"
           print(info_line)
 
   def predict(self, x: np.ndarray):
     return self.f(x, training=False)
+
+  def evaluate(self, x: np.ndarray, y: np.ndarray, metrics: list = ['accuracy']):
+    y_hat = self.predict(x)
+    out = {}
+    for metric in metrics:
+      out[metric] = self.get_metric(y_hat, y, metric)
+    return out
+
+  def get_metric(self, y_hat: np.ndarray, y: np.ndarray, metric: str):
+    if metric == 'loss':
+      return self.trainer.loss.f(y_hat, y)
+    elif metric == 'accuracy':
+      if self.trainer.loss is CrossEntropy:
+        y_hat_predict = np.argmax(y_hat, axis=-1)
+        y_predict = np.argmax(y, axis=-1)
+      elif self.trainer.loss is SparseCrossEntropy:
+        y_hat_predict = np.argmax(y_hat, axis=-1)
+        y_predict = y.reshape((-1))
+      else:
+        y_hat_predict = y_hat
+        y_predict = y
+      return np.count_nonzero(y_hat_predict == y_predict) / y_hat_predict.shape[0]
+    else:
+      return np.nan
 
   def summary(self, stdout=True):
     out = ''

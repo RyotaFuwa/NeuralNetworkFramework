@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-
-EPSILON = np.finfo(float).eps
+from misc.constants import EPSILON
 
 
 class Generator(ABC):

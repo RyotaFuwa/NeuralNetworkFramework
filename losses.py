@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from misc.errors import ShapeIncompatible
-from activations import Softmax
+from misc.constants import EPSILON
 
 
 class Loss(ABC):
@@ -37,13 +36,12 @@ class CrossEntropy(Loss):
 
   @staticmethod
   def f(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """assume x doesn't contain a value that is less than 0 inclusive"""
-    return np.mean(-np.sum(y * np.log(x), axis=-1))
+    return np.mean(-np.sum(y * np.log(x + EPSILON), axis=-1))
 
   @staticmethod
   def df(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     batch_size = y.shape[0]
-    return - y / x / batch_size
+    return - y / (x + EPSILON) / batch_size
 
 
 class SparseCrossEntropy(Loss):
@@ -53,27 +51,21 @@ class SparseCrossEntropy(Loss):
 
   @staticmethod
   def f(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """assume x doesn't contain a value that is less than 0 inclusive
-    and also y has shape of (# of samples, ) or (# of samples, 1)
-    """
+    """y has shape of (# of samples, ) or (# of samples, 1)"""
     if y.ndim == 2:
       y = y.reshape((-1))
     x = x[np.arange(x.shape[0]), y]
-    return np.mean(np.log(x))
+    return np.mean(np.log(x + EPSILON))
 
   @staticmethod
   def df(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """assume x doesn't contain a value that is less than 0 inclusive
-    and also y has shape of (# of samples, ) or (# of samples, 1)
-    """
+    """y has shape of (# of samples, ) or (# of samples, 1)"""
     if y.ndim == 2:
       y = y.reshape((-1))
-    batch_size = y.shape[0]
-
     mask = np.zeros_like(x)
     mask[np.arange(mask.shape[0]), y] = 1
-
-    return - mask / x / batch_size
+    batch_size = y.shape[0]
+    return - mask / (x + EPSILON) / batch_size
 
 
 class SoftmaxWithCrossEntropy(Loss):
@@ -86,7 +78,7 @@ class SoftmaxWithCrossEntropy(Loss):
   @staticmethod
   def df(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     batch_size = y.shape[0]
-    return x - y / batch_size
+    return (x - y) / batch_size
 
 
 REGISTERED_LOSSES = {

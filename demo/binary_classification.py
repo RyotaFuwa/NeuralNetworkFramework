@@ -4,13 +4,11 @@ import pandas as pd
 from scipy.io import arff
 import matplotlib.pyplot as plt
 
-from misc.utils import normalize, to_one_hot, split_data
-from layers import Input, Dropout, Dense
-from activations import ReLU, Softmax, Sigmoid
+from misc.utils import normalize, to_one_hot
+from layers import Input, Dense
 from models import Sequential
 from Trainer import Trainer
-from losses import MSE, CrossEntropy
-from optimizers import Adam, SGD
+from optimizers.optimizers import Adam
 
 
 def load_arff(path):
@@ -48,7 +46,7 @@ def binary_classification():
   x = Dense(2, activation='softmax')(x)
 
   # define trainer
-  trainer = Trainer(loss='cross_entropy', optimizer='adam', batch_size=256, epochs=500)
+  trainer = Trainer(loss='cross_entropy', optimizer=Adam(clipvalue=1.0), batch_size=256, epochs=500, metrics=['accuracy'])
 
   # create model
   model = Sequential(i, x, trainer)

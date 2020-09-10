@@ -1,7 +1,7 @@
 from typing import Union, Type
 
 from losses import Loss, loss_load
-from optimizers import Optimizer, optimizer_load
+from optimizers.optimizers import Optimizer, optimizer_load
 
 
 class Trainer(object):
@@ -12,9 +12,9 @@ class Trainer(object):
   epochs: int = 1
   shuffle: bool = True
   validation_split: float = 0.0
-  info = True
+  verbose: bool
 
-  def __init__(self, loss: str, optimizer: Union[str, Optimizer], metrics: list = [], **kwargs):
+  def __init__(self, loss: str, optimizer: Union[str, Optimizer], metrics: list = [], verbose=True, **kwargs):
     self.loss = loss_load(loss)
     if self.loss is None:
       raise Exception('not valid loss function')
@@ -27,6 +27,7 @@ class Trainer(object):
       self.optimizer = optimizer
 
     self.metrics = ['loss'] + metrics
+    self.verbose = verbose
     self.set_config(**kwargs)
 
   def set_config(self, **kwargs):
